@@ -10,7 +10,7 @@ import plotly.express as px
 spacex_df = pd.read_csv("spacex_launch_dash.csv")
 max_payload = spacex_df['Payload Mass (kg)'].max()
 min_payload = spacex_df['Payload Mass (kg)'].min()
-
+spacex_df.rename(columns={'Payload Mass (kg)':'PayloadMass'},inplace=True)
 # Create a dash application
 app = dash.Dash(__name__)
 
@@ -43,15 +43,18 @@ def get_pie_chart(entered_site):
 
 @app.callback(Output(component_id='success-payload-scatter-chart', component_property='figure'),
                [Input(component_id='site-dropdown', component_property='value'), Input(component_id="payload-slider", component_property="value")])
-def scatter_plot():
-    filtered_df = spacex_df
+def scatter_plot(entered_site,payload_mass):
+    print(payload_mass)
+    filtered_df = spacex_df.query("""{}< PayloadMass <{}""".format(payload_mass[0],payload_mass[1]))
     if entered_site == 'ALL':
-        fig=px.scatter(x=filtered_df['Payload Mass (kg)'],y=filtered_df['class'],color=filtered_df['Booster Version Category']
+        fig=px.scatter(x=filtered_df['PayloadMass'],y=filtered_df['class'],color=filtered_df['Booster Version Category']
                        )
     else:
-        fig=px.scatter(x=filtered_df['Payload Mass (kg)'],y=filtered_df['class'],color=filtered_df['Booster Version Category']
+        filtered_df = filtered_df[filtered_df['Launch Site'] == entered_site]
+        fig=px.scatter(x=filtered_df['PayloadMass'],y=filtered_df['class'],color=filtered_df['Booster Version Category']
                        )
-        filtered_df = spacex_df[spacex_df['Launch Site'] == entered_site]
+    return fig
+        
     
 # Create an app layout
 app.layout = html.Div(children=[html.H1('SpaceX Launch Records Dashboard',
@@ -78,7 +81,7 @@ app.layout = html.Div(children=[html.H1('SpaceX Launch Records Dashboard',
                                 # TASK 3: Add a slider to select payload range
                                 #dcc.RangeSlider(id='payload-slider',...)
                                 dcc.RangeSlider(id='payload-slider',
-                min=0, max=10000, step=1000,
+                min=0, max=16000, step=1000,
                 marks={0:'0',
                        100:'100'},
                 value=[min_payload, max_payload]),
